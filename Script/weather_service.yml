@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wthr-apis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wthr-location-api
+  namespace: wthr-apis
+  labels:
+    app: weather
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: weather
+  template:
+    metadata:
+      labels:
+        app: weather
+    spec:
+      containers:
+      - name: weather
+        image: rahulrai/weather-api
+        env:
+        - name: ALLOW_EMPTY_PASSWORD
+          value: "yes"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        ports:
+        - containerPort: 80
+          name: weather
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wthr-location-api
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "wthr-int-aks"
+  namespace: wthr-apis
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: weather
+  type: LoadBalancer
